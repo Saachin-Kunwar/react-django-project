@@ -37,9 +37,9 @@ api.interceptors.response.use(
     },
 
     async (error) => {
+
         const originalRequest = error.config;
 
-        // Access token expired
         if (
             error.response?.status === 401 &&
             !originalRequest._retry
@@ -53,7 +53,6 @@ api.interceptors.response.use(
             const refreshToken =
                 localStorage.getItem("refresh");
 
-            // No refresh token
             if (!refreshToken) {
                 console.log(
                     "No refresh token found."
@@ -63,20 +62,14 @@ api.interceptors.response.use(
             }
 
             try {
-                // ================================
-                // Refresh Token Request
-                // ================================
 
-                const refreshResponse = await axios.post(
-                    "http://127.0.0.1:8000/api/token/refresh/",
-                    {
-                        refresh: refreshToken,
-                    }
-                );
-
-                // ================================
-                // New Tokens
-                // ================================
+                const refreshResponse =
+                    await axios.post(
+                        "http://127.0.0.1:8000/api/token/refresh/",
+                        {
+                            refresh: refreshToken,
+                        }
+                    );
 
                 const newAccessToken =
                     refreshResponse.data.access;
@@ -84,13 +77,11 @@ api.interceptors.response.use(
                 const newRefreshToken =
                     refreshResponse.data.refresh;
 
-                // Save new access token
                 localStorage.setItem(
                     "access",
                     newAccessToken
                 );
 
-                // Save rotated refresh token
                 if (newRefreshToken) {
                     localStorage.setItem(
                         "refresh",
@@ -101,10 +92,6 @@ api.interceptors.response.use(
                 console.log(
                     "New access token received."
                 );
-
-                // ================================
-                // Retry Original Request
-                // ================================
 
                 originalRequest.headers.Authorization =
                     `Bearer ${newAccessToken}`;
@@ -117,11 +104,9 @@ api.interceptors.response.use(
                     "Refresh token expired or invalid."
                 );
 
-                // Remove tokens
                 localStorage.removeItem("access");
                 localStorage.removeItem("refresh");
 
-                // Tell React authentication failed
                 window.dispatchEvent(
                     new Event("auth:logout")
                 );
@@ -130,6 +115,42 @@ api.interceptors.response.use(
                     refreshError
                 );
             }
+        }
+
+
+        // 401
+        if (error.response?.status === 401) {
+            console.log(
+                "Authentication required."
+            );
+        }
+
+        // 403
+        if (error.response?.status === 403) {
+            console.log(
+                "Permission denied."
+            );
+        }
+
+        // 400
+        if (error.response?.status === 400) {
+            console.log(
+                "Bad request or validation error."
+            );
+        }
+
+        // 500
+        if (error.response?.status >= 500) {
+            console.log(
+                "Server error. Please try again later."
+            );
+        }
+
+        // Network error
+        if (!error.response) {
+            console.log(
+                "Network error. Please check the backend server."
+            );
         }
 
         return Promise.reject(error);
