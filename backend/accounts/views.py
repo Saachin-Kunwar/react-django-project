@@ -5,6 +5,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from .serializers import RegisterSerializer
+
+
 class RegisterView(APIView):
     permission_classes = [AllowAny]
 
@@ -31,6 +34,7 @@ class RegisterView(APIView):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
+
 class LoginView(APIView):
     permission_classes = [AllowAny]
 
@@ -40,23 +44,19 @@ class LoginView(APIView):
 
         if not email or not password:
             return Response(
-                {
-                    "detail": "Email and password are required."
-                },
+                {"detail": "Email and password are required."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
         user = authenticate(
             request,
-            username=email,
+            email=email,
             password=password,
         )
 
         if user is None:
             return Response(
-                {
-                    "detail": "Invalid email or password."
-                },
+                {"detail": "Invalid email or password."},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
@@ -95,28 +95,28 @@ class LoginView(APIView):
 
         return response
 
-class MeView(APIView):
-    permission_classes=[IsAuthenticated]
 
-    def get(self,request):
-        user= request.user
+class MeView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
 
         return Response(
             {
-                "id":user.id,
-                "username":user.username,
-                "email":user.email,
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
             }
         )
+
 
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
         response = Response(
-            {
-                "message": "Logout successful."
-            },
+            {"message": "Logout successful."},
             status=status.HTTP_200_OK,
         )
 
