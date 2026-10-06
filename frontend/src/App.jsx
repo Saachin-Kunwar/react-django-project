@@ -1,65 +1,34 @@
-import { Navigate, Route, Routes } from "react-router-dom";
-import { useEffect } from "react";
+import {
+    Navigate,
+    Route,
+    Routes,
+    useNavigate,
+} from "react-router-dom";
 
 import Login from "./pages/Login";
+import Register from "./pages/Register";
+import ProtectedRoute from "./components/ProtectedRoute";
 import { useAuth } from "./context/AuthContext";
 
-
-function AuthLogoutListener() {
-    const { logout } = useAuth();
-
-    useEffect(() => {
-        const handleAuthLogout = () => {
-            console.log(
-                "Authentication expired. Logging out..."
-            );
-
-            logout();
-        };
-
-        window.addEventListener(
-            "auth:logout",
-            handleAuthLogout
-        );
-
-        return () => {
-            window.removeEventListener(
-                "auth:logout",
-                handleAuthLogout
-            );
-        };
-    }, [logout]);
-
-    return null;
-}
-
-
 function Dashboard() {
-    const {
-        user,
-        loading,
-        isAuthenticated,
-        logout,
-    } = useAuth();
+    const { user, logout } = useAuth();
+    const navigate = useNavigate();
 
-    if (loading) {
-        return <h1>Loading...</h1>;
-    }
+    const handleLogout = async () => {
+        try {
+            await logout();
 
-    if (!isAuthenticated) {
-        return (
-            <Navigate
-                to="/login"
-                replace
-            />
-        );
-    }
+            navigate("/login", {
+                replace: true,
+            });
+        } catch (error) {
+            console.error("Logout failed:", error);
+        }
+    };
 
     return (
         <div style={{ padding: "40px" }}>
-            <h1>
-                ProductHub Dashboard
-            </h1>
+            <h1>ProductHub Dashboard</h1>
 
             <h2>
                 Welcome, {user.username}
@@ -69,46 +38,52 @@ function Dashboard() {
                 Email: {user.email}
             </p>
 
-            <button onClick={logout}>
+            <button onClick={handleLogout}>
                 Logout
             </button>
         </div>
     );
 }
 
-
 function App() {
     return (
-        <>
-            <AuthLogoutListener />
+        <Routes>
 
-            <Routes>
+            {/* Public Routes */}
 
-                {/* Home */}
-                <Route
-                    path="/"
-                    element={
-                        <Navigate
-                            to="/login"
-                            replace
-                        />
-                    }
-                />
+            <Route
+                path="/"
+                element={
+                    <Navigate
+                        to="/login"
+                        replace
+                    />
+                }
+            />
 
-                {/* Login */}
-                <Route
-                    path="/login"
-                    element={<Login />}
-                />
+            <Route
+                path="/login"
+                element={<Login />}
+            />
 
-                {/* Protected Dashboard */}
+            <Route
+                path="/register"
+                element={<Register />}
+            />
+
+
+            {/* Protected Routes */}
+
+            <Route element={<ProtectedRoute />}>
+
                 <Route
                     path="/dashboard"
                     element={<Dashboard />}
                 />
 
-            </Routes>
-        </>
+            </Route>
+
+        </Routes>
     );
 }
 

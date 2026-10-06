@@ -20,6 +20,11 @@ function Login() {
             ...formData,
             [e.target.name]: e.target.value,
         });
+
+        // Clear previous error when user starts typing
+        if (error) {
+            setError("");
+        }
     };
 
     // Handle login
@@ -35,20 +40,71 @@ function Login() {
                 formData.password
             );
 
-            // Login successful → Dashboard
+            // Login successful
             navigate("/dashboard");
+
         } catch (error) {
-            setError(
-                error.response?.data?.detail ||
-                "Login failed. Please check your credentials."
+
+            console.log("LOGIN ERROR:", error);
+            console.log(
+                "STATUS:",
+                error.response?.status
             );
+            console.log(
+                "DATA:",
+                error.response?.data
+            );
+
+            // 400 - Bad Request
+            if (error.response?.status === 400) {
+                setError(
+                    error.response?.data?.detail ||
+                    "Invalid email or password."
+                );
+
+            // 401 - Unauthorized
+            } else if (error.response?.status === 401) {
+                setError(
+                    "Invalid email or password."
+                );
+
+            // 403 - Forbidden
+            } else if (error.response?.status === 403) {
+                setError(
+                    "You do not have permission to login."
+                );
+
+            // 500+ - Server Error
+            } else if (error.response?.status >= 500) {
+                setError(
+                    "Server error. Please try again later."
+                );
+
+            // Network Error
+            } else if (!error.response) {
+                setError(
+                    "Cannot connect to server. Please check your connection."
+                );
+
+            // Other errors
+            } else {
+                setError(
+                    "Login failed. Please try again."
+                );
+            }
+
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div style={{ padding: "40px" }}>
+        <div
+            style={{
+                padding: "40px",
+            }}
+        >
+
             <h1>ProductHub Login</h1>
 
             <form onSubmit={handleSubmit}>
@@ -95,14 +151,23 @@ function Login() {
 
                 <br />
 
-                {/* Error message */}
+                {/* Error Message */}
                 {error && (
-                    <p style={{ color: "red" }}>
+                    <div
+                        style={{
+                            color: "red",
+                            backgroundColor: "#ffe6e6",
+                            border: "1px solid red",
+                            padding: "10px",
+                            marginBottom: "15px",
+                            borderRadius: "5px",
+                        }}
+                    >
                         {error}
-                    </p>
+                    </div>
                 )}
 
-                {/* Login button */}
+                {/* Login Button */}
                 <button
                     type="submit"
                     disabled={loading}
@@ -113,6 +178,7 @@ function Login() {
                 </button>
 
             </form>
+
         </div>
     );
 }
