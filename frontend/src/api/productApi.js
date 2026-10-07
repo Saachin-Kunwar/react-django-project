@@ -1,33 +1,43 @@
 import api from "./axios";
 
+
+// Get all products
 export const getProducts = async () => {
-    const response = await api.get("/products/");
+    const response = await api.get("products/");
     return response.data;
 };
 
-export const getProduct = async (id) => {
-    const response = await api.get(`/products/${id}/`);
-    return response.data;
-};
 
+// Create product
 export const createProduct = async (productData) => {
     const response = await api.post(
-        "/products/",
+        "products/",
         productData
     );
 
     return response.data;
 };
 
-export const updateProduct = async (id, productData) => {
+
+// Update product
+export const updateProduct = async (
+    id,
+    productData
+) => {
     const response = await api.patch(
-        `/products/${id}/`,
+        `products/${id}/`,
         productData
     );
 
     return response.data;
 };
 
+
+// Delete product
 export const deleteProduct = async (id) => {
-    await api.delete(`/products/${id}/`);
+    const response = await api.delete(
+        `products/${id}/`
+    );
+
+    return response.data;
 };

@@ -1,4 +1,4 @@
-from django.contrib.auth import authenticate
+from django.contrib.auth import authenticate, get_user_model
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -42,16 +42,24 @@ class LoginView(APIView):
         email = request.data.get("email")
         password = request.data.get("password")
 
-        if not email or not password:
+        if (
+            not isinstance(email, str)
+            or not email.strip()
+            or not isinstance(password, str)
+            or not password
+        ):
             return Response(
                 {"detail": "Email and password are required."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        user = authenticate(
-            request,
-            email=email,
-            password=password,
+        account = get_user_model().objects.filter(
+            email__iexact=email.strip()
+        ).first()
+        user = (
+            authenticate(request, email=account.email, password=password)
+            if account
+            else None
         )
 
         if user is None:

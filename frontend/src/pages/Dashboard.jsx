@@ -1,8 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+
 import ProductForm from "../components/ProductForm";
 import { useAuth } from "../context/AuthContext";
-import { getProducts } from "../api/productApi";
+import {
+    getProducts,
+    deleteProduct,
+} from "../api/productApi";
 
 function Dashboard() {
     const { user, logout } = useAuth();
@@ -12,10 +16,82 @@ function Dashboard() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
+    // Product currently being edited
+    const [productToEdit, setProductToEdit] =
+        useState(null);
+
+    // Product currently being deleted
+    const [deletingProductId, setDeletingProductId] =
+        useState(null);
+
+    // Create Product
     const handleProductCreated = (product) => {
-        setProducts((currentProducts) => [product, ...currentProducts]);
+        setProducts((currentProducts) => [
+            product,
+            ...currentProducts,
+        ]);
     };
 
+    // Update Product
+    const handleProductUpdated = (
+        updatedProduct
+    ) => {
+        setProducts((currentProducts) =>
+            currentProducts.map((product) =>
+                product.id === updatedProduct.id
+                    ? updatedProduct
+                    : product
+            )
+        );
+
+        setProductToEdit(null);
+    };
+
+    // Delete Product
+    const handleDeleteProduct = async (product) => {
+        const confirmed = window.confirm(
+            `Are you sure you want to delete "${product.name}"?`
+        );
+
+        if (!confirmed) {
+            return;
+        }
+
+        try {
+            setError("");
+
+            setDeletingProductId(product.id);
+
+            await deleteProduct(product.id);
+
+            // Remove deleted product from UI
+            setProducts((currentProducts) =>
+                currentProducts.filter(
+                    (currentProduct) =>
+                        currentProduct.id !==
+                        product.id
+                )
+            );
+        } catch (error) {
+            console.error(
+                "DELETE PRODUCT ERROR:",
+                error
+            );
+
+            setError(
+                error.response?.data?.detail ||
+                error.response?.data?.details ||
+                `Failed to delete product. Status: ${
+                    error.response?.status ||
+                    "Unknown"
+                }`
+            );
+        } finally {
+            setDeletingProductId(null);
+        }
+    };
+
+    // Load Products
     useEffect(() => {
         const loadProducts = async () => {
             try {
@@ -25,12 +101,16 @@ function Dashboard() {
 
                 setProducts(data);
             } catch (error) {
-                console.error("PRODUCT API ERROR:", error);
+                console.error(
+                    "PRODUCT API ERROR:",
+                    error
+                );
 
                 setError(
                     error.response?.data?.details ||
                     `Failed to load products. Status: ${
-                        error.response?.status || "Unknown"
+                        error.response?.status ||
+                        "Unknown"
                     }`
                 );
             } finally {
@@ -41,6 +121,7 @@ function Dashboard() {
         loadProducts();
     }, []);
 
+    // Logout
     const handleLogout = async () => {
         try {
             await logout();
@@ -74,59 +155,134 @@ function Dashboard() {
 
             <hr />
 
-            <ProductForm onProductCreated={handleProductCreated} />
+            {/* Add / Edit Product */}
+            <ProductForm
+                productToEdit={productToEdit}
+                onProductCreated={
+                    handleProductCreated
+                }
+                onProductUpdated={
+                    handleProductUpdated
+                }
+                onCancelEdit={() => {
+                    setProductToEdit(null);
+                }}
+            />
+
+            <hr />
 
             <h2>My Products</h2>
 
-            {loading && (
-                <p>Loading products...</p>
-            )}
-
+            {/* Error */}
             {error && (
                 <p style={{ color: "red" }}>
                     {error}
                 </p>
             )}
 
+            {/* Loading */}
+            {loading && (
+                <p>Loading products...</p>
+            )}
+
+            {/* Empty State */}
             {!loading &&
                 !error &&
                 products.length === 0 && (
                     <p>
-                        You don't have any products yet.
+                        You don't have any
+                        products yet.
                     </p>
                 )}
 
+            {/* Product List */}
             {!loading &&
+                !error &&
                 products.length > 0 && (
                     <div>
-                        {products.map((product) => (
-                            <div
-                                key={product.id}
-                                style={{
-                                    border: "1px solid #ccc",
-                                    padding: "15px",
-                                    marginBottom: "10px",
-                                }}
-                            >
-                                <h3>
-                                    {product.name}
-                                </h3>
+                        {products.map(
+                            (product) => (
+                                <div
+                                    key={
+                                        product.id
+                                    }
+                                    style={{
+                                        border:
+                                            "1px solid #ccc",
+                                        padding:
+                                            "15px",
+                                        marginBottom:
+                                            "10px",
+                                        borderRadius:
+                                            "8px",
+                                    }}
+                                >
+                                    <h3>
+                                        {
+                                            product.name
+                                        }
+                                    </h3>
 
-                                <p>
-                                    {product.description}
-                                </p>
+                                    <p>
+                                        {
+                                            product.description
+                                        }
+                                    </p>
 
-                                <p>
-                                    Price: Rs.{" "}
-                                    {product.price}
-                                </p>
+                                    <p>
+                                        <strong>
+                                            Price:
+                                        </strong>{" "}
+                                        Rs.{" "}
+                                        {
+                                            product.price
+                                        }
+                                    </p>
 
-                                <p>
-                                    Stock:{" "}
-                                    {product.stock}
-                                </p>
-                            </div>
-                        ))}
+                                    <p>
+                                        <strong>
+                                            Stock:
+                                        </strong>{" "}
+                                        {
+                                            product.stock
+                                        }
+                                    </p>
+
+                                    {/* Edit Button */}
+                                    <button
+                                        onClick={() => {
+                                            setProductToEdit(
+                                                product
+                                            );
+                                        }}
+                                    >
+                                        Edit
+                                    </button>
+
+                                    {/* Delete Button */}
+                                    <button
+                                        onClick={() =>
+                                            handleDeleteProduct(
+                                                product
+                                            )
+                                        }
+                                        disabled={
+                                            deletingProductId ===
+                                            product.id
+                                        }
+                                        style={{
+                                            marginLeft:
+                                                "10px",
+                                        }}
+                                    >
+                                        {deletingProductId ===
+                                        product.id
+                                            ? "Deleting..."
+                                            : "Delete"}
+                                    </button>
+                                </div>
+                            )
+                        )}
                     </div>
                 )}
         </div>
