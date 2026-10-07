@@ -16,15 +16,17 @@ function Dashboard() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
-    // Product currently being edited
     const [productToEdit, setProductToEdit] =
         useState(null);
 
-    // Product currently being deleted
     const [deletingProductId, setDeletingProductId] =
         useState(null);
 
-    // Create Product
+    // Search
+    const [searchTerm, setSearchTerm] =
+        useState("");
+
+    // Create
     const handleProductCreated = (product) => {
         setProducts((currentProducts) => [
             product,
@@ -32,7 +34,7 @@ function Dashboard() {
         ]);
     };
 
-    // Update Product
+    // Update
     const handleProductUpdated = (
         updatedProduct
     ) => {
@@ -47,7 +49,7 @@ function Dashboard() {
         setProductToEdit(null);
     };
 
-    // Delete Product
+    // Delete
     const handleDeleteProduct = async (product) => {
         const confirmed = window.confirm(
             `Are you sure you want to delete "${product.name}"?`
@@ -59,12 +61,10 @@ function Dashboard() {
 
         try {
             setError("");
-
             setDeletingProductId(product.id);
 
             await deleteProduct(product.id);
 
-            // Remove deleted product from UI
             setProducts((currentProducts) =>
                 currentProducts.filter(
                     (currentProduct) =>
@@ -91,7 +91,7 @@ function Dashboard() {
         }
     };
 
-    // Load Products
+    // Load products
     useEffect(() => {
         const loadProducts = async () => {
             try {
@@ -137,6 +137,28 @@ function Dashboard() {
         }
     };
 
+    // Search filtering
+    const filteredProducts = products.filter(
+        (product) => {
+            const search = searchTerm
+                .toLowerCase()
+                .trim();
+
+            if (!search) {
+                return true;
+            }
+
+            return (
+                product.name
+                    .toLowerCase()
+                    .includes(search) ||
+                product.description
+                    ?.toLowerCase()
+                    .includes(search)
+            );
+        }
+    );
+
     return (
         <div style={{ padding: "40px" }}>
             <h1>ProductHub Dashboard</h1>
@@ -155,7 +177,6 @@ function Dashboard() {
 
             <hr />
 
-            {/* Add / Edit Product */}
             <ProductForm
                 productToEdit={productToEdit}
                 onProductCreated={
@@ -173,6 +194,42 @@ function Dashboard() {
 
             <h2>My Products</h2>
 
+            {/* Search */}
+            <div
+                style={{
+                    marginBottom: "20px",
+                }}
+            >
+                <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) =>
+                        setSearchTerm(
+                            e.target.value
+                        )
+                    }
+                    placeholder="Search products..."
+                    style={{
+                        width: "300px",
+                        padding: "10px",
+                        fontSize: "16px",
+                    }}
+                />
+
+                {searchTerm && (
+                    <button
+                        onClick={() =>
+                            setSearchTerm("")
+                        }
+                        style={{
+                            marginLeft: "10px",
+                        }}
+                    >
+                        Clear
+                    </button>
+                )}
+            </div>
+
             {/* Error */}
             {error && (
                 <p style={{ color: "red" }}>
@@ -185,7 +242,7 @@ function Dashboard() {
                 <p>Loading products...</p>
             )}
 
-            {/* Empty State */}
+            {/* No products */}
             {!loading &&
                 !error &&
                 products.length === 0 && (
@@ -195,12 +252,23 @@ function Dashboard() {
                     </p>
                 )}
 
-            {/* Product List */}
+            {/* No search result */}
             {!loading &&
                 !error &&
-                products.length > 0 && (
+                products.length > 0 &&
+                filteredProducts.length === 0 && (
+                    <p>
+                        No products found for "
+                        {searchTerm}".
+                    </p>
+                )}
+
+            {/* Products */}
+            {!loading &&
+                !error &&
+                filteredProducts.length > 0 && (
                     <div>
-                        {products.map(
+                        {filteredProducts.map(
                             (product) => (
                                 <div
                                     key={
@@ -248,7 +316,6 @@ function Dashboard() {
                                         }
                                     </p>
 
-                                    {/* Edit Button */}
                                     <button
                                         onClick={() => {
                                             setProductToEdit(
@@ -259,7 +326,6 @@ function Dashboard() {
                                         Edit
                                     </button>
 
-                                    {/* Delete Button */}
                                     <button
                                         onClick={() =>
                                             handleDeleteProduct(
