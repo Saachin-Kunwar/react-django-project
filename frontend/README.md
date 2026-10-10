@@ -21,3 +21,6 @@ If you are developing a production application, we recommend using TypeScript wi
 
  new onne saachin@example.com
           Test@12345
+
+latest producttest@example.com
+       product123@4
