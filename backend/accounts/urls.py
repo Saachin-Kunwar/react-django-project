@@ -7,6 +7,7 @@ from .views import (
     MeView,
     RefreshView,
     RegisterView,
+    CsrfView,
 )
 
 urlpatterns = [
@@ -15,4 +16,6 @@ urlpatterns = [
     path("me/", MeView.as_view(), name="me"),
     path("logout/", LogoutView.as_view(), name="logout"),
     path("refresh/", RefreshView.as_view(), name="refresh"),
+
+    path("csrf/", CsrfView.as_view(), name="csrf"),
 ]

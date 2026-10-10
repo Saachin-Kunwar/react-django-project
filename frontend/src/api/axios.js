@@ -92,11 +92,82 @@
 // );
 
 // export default api;
+
 import axios from "axios";
 
 const api = axios.create({
     baseURL: "http://localhost:8000/api",
     withCredentials: true,
 });
+
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error) => {
+    failedQueue.forEach((promise) => {
+        if (error) {
+            promise.reject(error);
+        } else {
+            promise.resolve();
+        }
+    });
+
+    failedQueue = [];
+};
+
+api.interceptors.response.use(
+    (response) => response,
+
+    async (error) => {
+        const originalRequest = error.config;
+
+        if (!originalRequest || error.response?.status !== 401) {
+            return Promise.reject(error);
+        }
+
+        // Do not retry the refresh request itself or retry twice.
+        if (
+            originalRequest.url?.includes("/auth/refresh/") ||
+            originalRequest.url?.includes("/auth/login/") ||
+            originalRequest.url?.includes("/auth/register/") ||
+            originalRequest._retry
+        ) {
+            return Promise.reject(error);
+        }
+
+        originalRequest._retry = true;
+
+        if (isRefreshing) {
+            return new Promise((resolve, reject) => {
+                failedQueue.push({ resolve, reject });
+            }).then(() => api(originalRequest));
+        }
+
+        isRefreshing = true;
+
+        try {
+            await api.post("/auth/refresh/");
+            processQueue(null);
+
+            // The browser automatically sends the updated HttpOnly cookie.
+            return api(originalRequest);
+        } catch (refreshError) {
+            processQueue(refreshError);
+
+            // Redirect only if the user is not already on an auth page.
+            const isAuthPage = ["/login", "/register"].includes(
+                window.location.pathname
+            );
+
+            if (!isAuthPage) {
+                window.location.assign("/login");
+            }
+
+            return Promise.reject(refreshError);
+        } finally {
+            isRefreshing = false;
+        }
+    }
+);
 
 export default api;
